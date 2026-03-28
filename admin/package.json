@@ -10,9 +10,9 @@
   "dependencies": {
     "astro": "^6.1.1",
     "@astrojs/node": "^10.0.4",
-    "@astrojs/tailwind": "^6.0.2",
+    "@tailwindcss/vite": "^4.2.2",
     "pocketbase": "^0.21.0",
-    "tailwindcss": "^4.0.0",
+    "tailwindcss": "^4.2.2",
     "zod": "^4.0.0" 
   }
 }
