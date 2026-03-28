@@ -1,5 +1,6 @@
 FROM node:22-slim AS runtime
 WORKDIR /app
+ENV ASTRO_TELEMETRY_DISABLED=1
 
 # 1. Install dependencies
 COPY package*.json ./
