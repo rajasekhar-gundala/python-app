@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+const pb = Astro.locals.pb;
+
+// Fetch tenants from PocketBase
+const tenants = await pb.collection('tenants').getFullList({
+    sort: '-created',
+});
+---
+
+<Layout title="Tenant Management">
+  <main class="p-8 max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-2xl font-bold">Your Customers (Tenants)</h1>
+      <button onclick="document.getElementById('add_modal').showModal()" class="btn-primary">
+        + Add Tenant
+      </button>
+    </div>
+
+    <table class="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="p-4 text-left">Company Name</th>
+          <th class="p-4 text-left">Website URL</th>
+          <th class="p-4 text-left">Status</th>
+          <th class="p-4 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {tenants.map((t) => (
+          <tr class="border-t">
+            <td class="p-4 font-medium">{t.name}</td>
+            <td class="p-4 text-gray-600">{t.domain}</td>
+            <td class="p-4">
+               <span class={`px-2 py-1 rounded text-xs ${t.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {t.active ? 'Active' : 'Disabled'}
+               </span>
+            </td>
+            <td class="p-4 text-right">
+              <a href={`/admin/tenants/${t.id}`} class="text-blue-600 hover:underline">Config</a>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </main>
+
+  <dialog id="add_modal" class="p-6 rounded-lg shadow-xl">
+    <form method="POST" action="/api/create-tenant" class="space-y-4">
+        <h2 class="text-lg font-bold">New Tenant</h2>
+        <input name="name" placeholder="Company Name" required class="border p-2 w-full" />
+        <input name="domain" placeholder="example.com" required class="border p-2 w-full" />
+        <div class="flex justify-end gap-2">
+            <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Create</button>
+        </div>
+    </form>
+  </dialog>
+</Layout>
