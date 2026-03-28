@@ -1,0 +1,70 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | AI Admin</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style is:global>
+      :root {
+        --accent: 0, 123, 255;
+      }
+      html {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: #f8fafc;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+      /* Custom button styles to keep templates clean */
+      .btn-primary {
+        @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-sm;
+      }
+    </style>
+  </head>
+  <body class="antialiased text-gray-900">
+    <nav class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex">
+            <div class="flex-shrink-0 flex items-center">
+              <span class="text-xl font-bold text-blue-600">AI Platform</span>
+            </div>
+            <div class="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
+              <a href="/admin/tenants" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                Tenants
+              </a>
+              <a href="/admin/analytics" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                Analytics
+              </a>
+            </div>
+          </div>
+          <div class="flex items-center">
+             <button class="text-sm text-gray-500 hover:text-gray-700">Logout</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <slot />
+
+    <footer class="mt-20 py-10 border-t border-gray-100 text-center text-sm text-gray-400">
+      &copy; 2026 AI Automation Systems. Running on 2 vCPU / 8GB RAM.
+    </footer>
+  </body>
+</html>
