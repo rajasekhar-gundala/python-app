@@ -8,7 +8,7 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "astro": "^6.0.0",
+    "astro": "^6.1.1",
     "@astrojs/node": "^10.0.4",
     "@astrojs/tailwind": "^6.0.2",
     "pocketbase": "^0.21.0",
