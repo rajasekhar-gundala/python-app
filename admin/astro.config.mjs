@@ -1,17 +1,17 @@
+// @ts-check
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import tailwindcss from '@tailwindcss/vite';
 
+// https://astro.build/config
 export default defineConfig({
-  output: 'server', // SSR is mandatory for your multi-tenant admin
+  integrations: [react()],
+
   adapter: node({
-    mode: 'standalone',
+    mode: 'standalone'
   }),
+
   vite: {
     plugins: [tailwindcss()]
-  }
-  server: {
-    host: true,
-    port: 4321
   }
 });
