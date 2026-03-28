@@ -10,9 +10,6 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()]
   }
-  security: {
-    csp: true, // Now stable in v6; automatically hashes inline scripts
-  },
   server: {
     host: true,
     port: 4321
