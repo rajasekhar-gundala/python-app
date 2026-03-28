@@ -20,5 +20,5 @@ llama-cpp-python==0.2.77
 tokenizers==0.19.1
 
 # Backend Services & Auth
-pocketbase==0.21.0
+pocketbase==0.15.0
 python-dotenv==1.0.1
