@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import '../styles/global.css';
 
+// Variables initialized at the top for build-time safety
 let success = false;
 let error = '';
 
@@ -16,7 +17,6 @@ if (Astro.request.method === 'POST') {
       status: 'new'
     };
 
-    // Use the internal PB instance from middleware
     const pb = Astro.locals.pb;
     await pb.collection('inquiries').create(data);
     success = true;
@@ -28,78 +28,5 @@ if (Astro.request.method === 'POST') {
 
 <Layout title="Contact Support - Jammetry AI">
   <main class="py-20 bg-gray-50 min-h-screen px-4">
-    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 bg-white rounded-3xl shadow-xl overflow-hidden">
-      
-      <div class="bg-blue-600 p-12 text-white">
-        <h1 class="text-4xl font-bold mb-6">Get in Touch</h1>
-        <p class="text-blue-100 mb-10 text-lg leading-relaxed">
-          Have questions about our AI platform? Our team is ready to help you automate your business workflow.
-        </p>
-
-        <div class="space-y-8">
-          <div class="flex items-start gap-4">
-            <span class="text-2xl">📧</span>
-            <div>
-              <p class="font-bold">Email Us</p>
-              <p class="text-blue-100">support@jammetry.com</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-4">
-            <span class="text-2xl">📍</span>
-            <div>
-              <p class="font-bold">Headquarters</p>
-              <p class="text-blue-100">AI Innovation Hub, 2 vCPU Cluster</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-4">
-            <span class="text-2xl">⚡</span>
-            <div>
-              <p class="font-bold">System Status</p>
-              <p class="text-blue-100">Operational (8GB RAM Cluster)</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="p-12">
-        {success ? (
-          <div class="text-center py-20">
-            <div class="text-5xl mb-4">✅</div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Message Received!</h2>
-            <p class="text-gray-500 mb-8">We'll get back to you within 24 hours.</p>
-            <a href="/" class="btn-primary px-8 py-3">Back to Home</a>
-          </div>
-        ) : (
-          <form method="POST" class="space-y-5">
-            {error && <p class="text-red-500 text-sm font-bold">{error}</p>}
-            
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Name</label>
-                <input type="text" name="name" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="John Doe" />
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                <input type="email" name="email" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="john@company.com" />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
-              <input type="text" name="subject" required class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Pricing Inquiry" />
-            </div>
-
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Message</label>
-              <textarea name="message" required rows="5" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="How can we help you?"></textarea>
-            </div>
-
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
-              Send Message
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  </main>
+    </main>
 </Layout>
