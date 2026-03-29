@@ -13,7 +13,7 @@ async def check_usage_limit(tenant_id: str, limit: int = 100):
     # 1. Get the start of the current MONTH (YYYY-MM-01 00:00:00)
     # This aligns with your 100-message-per-month business model
     now = datetime.now(timezone.utc)
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%SZ")
     
     # 2. PocketBase filter string
     # We use 'tenantId' to match the schema used in your analytics and main.py

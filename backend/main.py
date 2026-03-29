@@ -2,7 +2,7 @@ import os
 import json
 import httpx
 from typing import Optional
-from fastapi import FastAPI, Request, UploadFile, File, BackgroundTask
+from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,7 +32,7 @@ MONTHLY_CHAT_LIMIT = 100
 # --- CHAT ENDPOINT ---
 
 @app.post("/chat/{tenant_id}")
-async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTask):
+async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
     user_query = data.get("message")
     
