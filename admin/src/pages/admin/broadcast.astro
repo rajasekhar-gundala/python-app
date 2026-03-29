@@ -1,0 +1,101 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const pb = Astro.locals.pb;
+
+// 1. Security Check
+if (!locals.user) {
+  return Astro.redirect('/login');
+}
+
+let status = '';
+let recipientCount = 0;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.formData();
+    const subject = data.get('subject')?.toString();
+    const body = data.get('message')?.toString();
+
+    // Fetch all active tenants with an email
+    const tenants = await pb.collection('tenants').getFullList({
+      filter: 'active = true && contact_email != ""',
+      fields: 'contact_email,name'
+    });
+
+    recipientCount = tenants.length;
+
+    // Use PocketBase's internal Mailer (via API) 
+    // We send them individually to avoid "To:" list exposure
+    for (const tenant of tenants) {
+      await pb.send("/api/admins/email-test", "POST", { // Using PB's built-in test route logic or custom
+         body: {
+            to: tenant.contact_email,
+            subject: subject,
+            html: `<div style="font-family:sans-serif;">
+                    <h2>Hello ${tenant.name},</h2>
+                    <p>${body.replace(/\n/g, '<br>')}</p>
+                    <hr/>
+                    <p style="font-size:10px; color:#999;">Sent via Jammetry AI Admin Control</p>
+                  </div>`
+         }
+      });
+    }
+    status = 'success';
+  } catch (e) {
+    status = 'error';
+    console.error(e);
+  }
+}
+---
+
+<Layout title="Email Broadcast">
+  <main class="p-8 max-w-4xl mx-auto">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Email Broadcast</h1>
+      <p class="text-gray-500">Send an update to all active tenants on the platform.</p>
+    </div>
+
+    {status === 'success' && (
+      <div class="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-8">
+        🚀 Successfully sent broadcast to <strong>{recipientCount}</strong> tenants!
+      </div>
+    )}
+
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <form method="POST" class="space-y-6">
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2">Subject Line</label>
+          <input 
+            type="text" 
+            name="subject" 
+            required 
+            class="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. New Feature: Website Crawling is now live!"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-2">Message Content (HTML Supported)</label>
+          <textarea 
+            name="message" 
+            required 
+            rows="10" 
+            class="w-full px-4 py-3 rounded-lg border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+            placeholder="Write your announcement here..."
+          ></textarea>
+        </div>
+
+        <div class="pt-4">
+          <button 
+            type="submit" 
+            onclick="return confirm('Are you sure you want to send this to ALL tenants?')"
+            class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+          >
+            Send Broadcast Now
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</Layout>

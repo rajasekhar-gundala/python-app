@@ -1,0 +1,101 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const pb = Astro.locals.pb;
+
+// 1. Security: Ensure only logged-in users can see this
+if (!locals.user) {
+  return Astro.redirect('/login');
+}
+
+// 2. Handle Status Updates (Mark as Read/Replied)
+if (Astro.request.method === 'POST') {
+  const data = await Astro.request.formData();
+  const id = data.get('id')?.toString();
+  const newStatus = data.get('status')?.toString();
+  
+  if (id && newStatus) {
+    await pb.collection('inquiries').update(id, { status: newStatus });
+  }
+}
+
+// 3. Fetch all inquiries
+const inquiries = await pb.collection('inquiries').getFullList({
+  sort: '-created',
+});
+---
+
+<Layout title="Inquiry Management">
+  <main class="p-8 max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Contact Inquiries</h1>
+        <p class="text-gray-500">Manage leads and support tickets from your website.</p>
+      </div>
+      <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm">
+        Total: {inquiries.length}
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-bold">
+            <th class="px-6 py-4">Date</th>
+            <th class="px-6 py-4">Sender</th>
+            <th class="px-6 py-4">Subject & Message</th>
+            <th class="px-6 py-4">Status</th>
+            <th class="px-6 py-4 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {inquiries.map((i) => (
+            <tr class={i.status === 'new' ? 'bg-blue-50/30' : ''}>
+              <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                {new Date(i.created).toLocaleDateString()}
+              </td>
+              <td class="px-6 py-4">
+                <p class="font-bold text-gray-900">{i.name}</p>
+                <p class="text-xs text-gray-500">{i.email}</p>
+              </td>
+              <td class="px-6 py-4 max-w-xs">
+                <p class="font-semibold text-sm text-gray-800 mb-1">{i.subject}</p>
+                <p class="text-xs text-gray-600 line-clamp-2">{i.message}</p>
+              </td>
+              <td class="px-6 py-4 text-sm">
+                <span class={`px-2 py-1 rounded-full text-xs font-bold ${
+                  i.status === 'new' ? 'bg-blue-100 text-blue-600' : 
+                  i.status === 'replied' ? 'bg-green-100 text-green-600' : 
+                  'bg-gray-100 text-gray-500'
+                }`}>
+                  {i.status}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <form method="POST" class="inline">
+                  <input type="hidden" name="id" value={i.id} />
+                  <select 
+                    name="status" 
+                    onchange="this.form.submit()" 
+                    class="text-xs border border-gray-200 rounded px-2 py-1 outline-none hover:border-blue-400"
+                  >
+                    <option value="" disabled selected>Update</option>
+                    <option value="new">New</option>
+                    <option value="replied">Replied</option>
+                    <option value="archived">Archive</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      
+      {inquiries.length === 0 && (
+        <div class="p-20 text-center text-gray-400 italic">
+          No inquiries found yet. Your marketing is just getting started!
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>
