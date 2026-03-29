@@ -1,0 +1,94 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const pb = Astro.locals.pb;
+
+const tenants = await pb.collection('tenants').getFullList();
+const messages = await pb.collection('chat_history').getFullList({
+    fields: 'tenantId',
+});
+
+const stats = tenants.map(tenant => {
+    const count = messages.filter(m => m.tenantId === tenant.id).length;
+    const limit = 100;
+    const percentage = Math.min((count / limit) * 100, 100);
+    
+    return {
+        ...tenant,
+        usageCount: count,
+        usagePercent: percentage,
+        isWarning: count >= 80 && count < 100, // 80% Threshold
+        isOverLimit: count >= limit
+    };
+});
+
+// Identify tenants needing immediate attention
+const atRiskTenants = stats.filter(s => s.isWarning || s.isOverLimit);
+const totalMessages = messages.length;
+const activeTenants = tenants.filter(t => t.active).length;
+---
+
+<Layout title="Analytics">
+  <main class="p-8 max-w-5xl mx-auto">
+    
+    {atRiskTenants.length > 0 && (
+      <div class="mb-8 space-y-3">
+        {atRiskTenants.map(t => (
+          <div class={`flex items-center justify-between p-4 rounded-lg border shadow-sm animate-pulse ${t.isOverLimit ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+            <div class="flex items-center gap-3">
+              <span class="text-xl">{t.isOverLimit ? '🚫' : '⚠️'}</span>
+              <div>
+                <p class="font-bold">{t.name} is {t.isOverLimit ? 'at 100% capacity' : 'near limit'}</p>
+                <p class="text-sm opacity-90">Usage: {t.usageCount}/100 messages. Action required to prevent service cutoff.</p>
+              </div>
+            </div>
+            <a href={`/admin/tenants/${t.id}`} class="bg-white px-4 py-2 rounded shadow-sm text-sm font-bold hover:scale-105 transition-transform">
+              Manage Tenant
+            </a>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <h1 class="text-3xl font-bold mb-8">Platform Overview</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Total Tenants</p>
+        <p class="text-3xl font-bold text-blue-600">{tenants.length}</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Active Subscriptions</p>
+        <p class="text-3xl font-bold text-green-600">{activeTenants}</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Total Messages (MTD)</p>
+        <p class="text-3xl font-bold text-purple-600">{totalMessages}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="p-6 border-b border-gray-100">
+        <h2 class="text-lg font-bold">Tenant Usage (Monthly Limit: 100)</h2>
+      </div>
+      <div class="p-6 space-y-8">
+        {stats.map((s) => (
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="font-medium text-gray-700">{s.name}</span>
+              <span class={`text-sm ${s.isOverLimit ? 'text-red-600 font-bold' : s.isWarning ? 'text-amber-600 font-bold' : 'text-gray-500'}`}>
+                {s.usageCount} / 100 messages
+              </span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-3">
+              <div 
+                class={`h-3 rounded-full transition-all duration-500 ${s.isOverLimit ? 'bg-red-500' : s.isWarning ? 'bg-amber-500' : 'bg-blue-500'}`} 
+                style={`width: ${s.usagePercent}%`}
+              ></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </main>
+</Layout>

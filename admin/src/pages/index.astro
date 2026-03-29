@@ -1,0 +1,122 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/global.css';
+
+const features = [
+  {
+    title: "Instant Knowledge Base",
+    description: "Upload PDFs, Docx, or crawl your website. Our RAG system indexes everything in seconds.",
+    icon: "📚"
+  },
+  {
+    title: "Multi-tenant Dashboard",
+    description: "Manage multiple clients from one central admin panel with individual usage tracking.",
+    icon: "🏢"
+  },
+  {
+    title: "Smart Rate Limiting",
+    description: "Protect your resources with built-in caps. 100 chats per month on the starter tier.",
+    icon: "🛡️"
+  }
+];
+
+const pricing = [
+  {
+    name: "Starter",
+    price: "$29",
+    description: "Perfect for small local businesses.",
+    features: ["100 AI Chats / mo", "1 Website Crawler", "Basic Widget Customization", "Email Support"],
+    button: "Start Free Trial",
+    highlight: false
+  },
+  {
+    name: "Professional",
+    price: "$79",
+    description: "For growing companies needing more.",
+    features: ["1,000 AI Chats / mo", "5 Document Uploads", "Advanced Brand Matching", "Priority Support"],
+    button: "Get Started",
+    highlight: true
+  },
+  {
+    name: "Agency",
+    price: "Custom",
+    description: "Full white-label solution.",
+    features: ["Unlimited Tenants", "Dedicated VPS Resources", "API Access", "24/7 Monitoring"],
+    button: "Contact Sales",
+    highlight: false
+  }
+];
+---
+
+<Layout title="AI Automation - Smart Chatbots for Your Business">
+  <header class="py-20 px-4 text-center bg-linear-to-b from-blue-50 to-white">
+    <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
+      Your Business Knowledge, <br/>
+      <span class="text-blue-600">Powered by AI.</span>
+    </h1>
+    <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-10">
+      Deploy custom-trained AI assistants to your website in minutes. Automate support, capture leads, and scale your expertise without lifting a finger.
+    </p>
+    <div class="flex justify-center gap-4">
+      <a href="/login" class="btn-primary text-lg px-8 py-4">Get Started for Free</a>
+      <a href="#pricing" class="px-8 py-4 text-lg font-semibold text-gray-700 hover:text-blue-600 transition-colors">View Pricing &rarr;</a>
+    </div>
+  </header>
+
+  <section class="py-24 max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+      {features.map(f => (
+        <div class="p-8 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div class="text-4xl mb-4">{f.icon}</div>
+          <h3 class="text-xl font-bold mb-3">{f.title}</h3>
+          <p class="text-gray-600 leading-relaxed">{f.description}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section id="pricing" class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-gray-900">Simple, Transparent Pricing</h2>
+        <p class="text-gray-600 mt-4 text-lg">Choose the plan that fits your business needs.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {pricing.map(plan => (
+          <div class={`relative p-8 rounded-2xl bg-white border ${plan.highlight ? 'border-blue-500 shadow-xl scale-105 z-10' : 'border-gray-200 shadow-sm'}`}>
+            {plan.highlight && (
+              <span class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                Most Popular
+              </span>
+            )}
+            <h3 class="text-2xl font-bold text-gray-900">{plan.name}</h3>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-4xl font-bold">{plan.price}</span>
+              <span class="text-gray-500">{plan.price !== 'Custom' ? '/mo' : ''}</span>
+            </div>
+            <p class="mt-4 text-gray-600 text-sm">{plan.description}</p>
+            
+            <ul class="mt-8 space-y-4 mb-10">
+              {plan.features.map(feat => (
+                <li class="flex items-center gap-3 text-gray-700">
+                  <span class="text-blue-500 font-bold">✓</span> {feat}
+                </li>
+              ))}
+            </ul>
+
+            <button class={`w-full py-3 rounded-lg font-bold transition-all ${plan.highlight ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>
+              {plan.button}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="py-20 text-center">
+    <h2 class="text-3xl font-bold mb-6">Ready to automate your customer experience?</h2>
+    <p class="text-gray-500 mb-10">Join 50+ businesses already using our AI platform.</p>
+    <a href="/login" class="btn-primary px-10 py-4 text-lg">Create Your First Tenant</a>
+  </section>
+</Layout>

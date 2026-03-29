@@ -1,0 +1,70 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+let errorMessage = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.formData();
+    const email = data.get('email')?.toString();
+    const password = data.get('password')?.toString();
+
+    if (email && password) {
+      // Use the internal Docker URL for the server-side request
+      const pb = Astro.locals.pb;
+      await pb.collection('users').authWithPassword(email, password);
+      
+      // Set cookie and redirect to admin
+      Astro.response.headers.append('set-cookie', pb.authStore.exportToCookie());
+      return Astro.redirect('/admin/tenants');
+    }
+  } catch (e) {
+    errorMessage = 'Invalid email or password.';
+  }
+}
+---
+
+<Layout title="Login">
+  <main class="min-h-[70vh] flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Welcome Back</h1>
+        <p class="text-gray-500 mt-2">Sign in to manage your AI tenants</p>
+      </div>
+
+      {errorMessage && (
+        <div class="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 border border-red-100">
+          {errorMessage}
+        </div>
+      )}
+
+      <form method="POST" class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+          <input 
+            type="email" 
+            name="email" 
+            required 
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            placeholder="admin@yourdomain.com"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+          <input 
+            type="password" 
+            name="password" 
+            required 
+            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            placeholder="••••••••"
+          />
+        </div>
+
+        <button type="submit" class="w-full btn-primary py-3 text-lg">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/global.css';
+
+// We'll pass the new tenant ID in the URL: /signup-success?id=TENANT_ID
+const tenantId = Astro.url.searchParams.get('id') || 'YOUR_ID_HERE';
+const dashboardUrl = "/login";
+---
+
+<Layout title="Registration Successful!">
+  <main class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+    <div class="max-w-2xl w-full bg-white p-10 rounded-2xl shadow-xl border border-gray-100 text-center">
+      <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full text-4xl">
+        🎉
+      </div>
+      
+      <h1 class="text-3xl font-extrabold text-gray-900 mb-4">You're All Set!</h1>
+      <p class="text-gray-600 text-lg mb-8">
+        Your AI Assistant has been provisioned. Check your email for a password reset link to access your full dashboard.
+      </p>
+
+      <div class="bg-gray-900 rounded-xl p-6 text-left mb-8 relative group">
+        <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">
+          1. Copy your Widget Script
+        </h3>
+        <pre class="text-blue-400 font-mono text-sm overflow-x-auto"><code>&lt;script src="https://admin.yourdomain.com/widget/{tenantId}.js"&gt;&lt;/script&gt;</code></pre>
+        
+        <p class="text-gray-500 text-xs mt-4">
+          Paste this right before the <code>&lt;/body&gt;</code> tag on your website.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a href={dashboardUrl} class="btn-primary py-3">
+          Go to Dashboard
+        </a>
+        <a href="/" class="bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition-all">
+          Back to Home
+        </a>
+      </div>
+
+      <p class="mt-8 text-sm text-gray-400">
+        Using our Starter Tier: 100 free chats included this month.
+      </p>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  // Simple "Click to Copy" functionality if you want to add a button later
+  console.log("Onboarding initialized for tenant:", new URLSearchParams(window.location.search).get('id'));
+</script>

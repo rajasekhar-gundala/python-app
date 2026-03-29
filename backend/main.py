@@ -26,7 +26,8 @@ app.add_middleware(
 
 # Environment Constants
 LLM_SERVER_URL = os.getenv("LLM_API_URL", "http://llama-server:8080/v1/chat/completions")
-DAILY_CHAT_LIMIT = 100
+# Updated to match your per-tenant business logic
+MONTHLY_CHAT_LIMIT = 100 
 
 # --- CHAT ENDPOINT ---
 
@@ -38,19 +39,26 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
     if not user_query:
         return {"error": "Message is required"}
 
-    # 1. Usage Guardrail (2 vCPU Optimized: Fast SQLite check)
-    is_allowed, current_count = await check_usage_limit(tenant_id, limit=DAILY_CHAT_LIMIT)
+    # 1. Usage Guardrail (2 vCPU Optimized: Fast SQLite count check)
+    # This checks how many messages this tenant has sent this month
+    is_allowed, current_count = await check_usage_limit(tenant_id, limit=MONTHLY_CHAT_LIMIT)
+    
     if not is_allowed:
         return {
             "error": "Limit Reached",
-            "message": f"Daily limit of {DAILY_CHAT_LIMIT} chats reached for this tenant."
+            "current_usage": current_count,
+            "limit": MONTHLY_CHAT_LIMIT,
+            "message": f"Usage limit of {MONTHLY_CHAT_LIMIT} chats reached. Please contact admin."
         }
 
     # 2. RAG: Retrieve context from LanceDB
     context = search_kb(tenant_id, user_query)
     
     # 3. Construct Prompt for Llama-3.2-3B
-    system_content = "You are a helpful assistant. Use the provided context to answer accurately. If unsure, say you don't know."
+    system_content = (
+        "You are a helpful assistant. Use the provided context to answer accurately. "
+        "If unsure, say you don't know."
+    )
     full_prompt = f"Context:\n{context}\n\nUser Question: {user_query}"
     
     payload = {
@@ -66,20 +74,33 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
 
     async def stream_generator():
         full_ai_response = ""
+        
+        # We yield the current usage as the first 'meta' packet so the UI can update
+        yield f"data: {json.dumps({'type': 'usage', 'current': current_count + 1, 'limit': MONTHLY_CHAT_LIMIT})}\n\n"
+
         async with httpx.AsyncClient(timeout=None) as client:
-            async with client.stream("POST", LLM_SERVER_URL, json=payload) as response:
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        yield f"{line}\n\n"
-                        # Collect full response for background logging
-                        try:
-                            json_data = json.loads(line.replace("data: ", ""))
-                            content = json_data["choices"][0]["delta"].get("content", "")
-                            full_ai_response += content
-                        except:
-                            pass
+            try:
+                async with client.stream("POST", LLM_SERVER_URL, json=payload) as response:
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            yield f"{line}\n\n"
+                            
+                            # Collect full response for background logging
+                            try:
+                                # Skip processing the [DONE] signal
+                                if "[DONE]" in line: continue
+                                
+                                json_data = json.loads(line.replace("data: ", ""))
+                                delta = json_data["choices"][0]["delta"]
+                                if "content" in delta:
+                                    full_ai_response += delta["content"]
+                            except:
+                                pass
+            except Exception as e:
+                yield f"data: {json.dumps({'error': 'LLM_SERVER_UNREACHABLE'})}\n\n"
         
         # 4. Background Task: Log chat to PocketBase without delaying the stream
+        # This increments the count in the DB for the next request
         background_tasks.add_task(log_chat, tenant_id, user_query, full_ai_response)
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
@@ -88,24 +109,19 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
 
 @app.post("/ingest/url/{tenant_id}")
 async def ingest_url(tenant_id: str, data: dict):
-    """Triggers website crawling and indexing."""
     url = data.get("url")
     if not url: return {"error": "URL required"}
-    
-    # Run crawler logic
     crawl_website(tenant_id, url)
     return {"status": "processing", "source": url}
 
 @app.post("/ingest/upload/{tenant_id}")
 async def upload_doc(tenant_id: str, file: UploadFile = File(...)):
-    """Handles PDF/Docx uploads."""
     content = await file.read()
     num_chunks = process_document(tenant_id, file.filename, content)
     return {"status": "success", "filename": file.filename, "chunks": num_chunks}
 
 @app.post("/ingest/api/{tenant_id}")
 async def ingest_api(tenant_id: str, data: dict):
-    """Fetches data from an external JSON API."""
     url = data.get("url")
     headers = data.get("headers", {})
     result = await ingest_external_api(tenant_id, url, headers)

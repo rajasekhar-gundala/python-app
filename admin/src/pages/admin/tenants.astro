@@ -28,7 +28,7 @@ const tenants = await pb.collection('tenants').getFullList({
       </thead>
       <tbody>
         {tenants.map((t) => (
-          <tr class="border-t">
+          <tr class="border-t" id={`row-${t.id}`}>
             <td class="p-4 font-medium">{t.name}</td>
             <td class="p-4 text-gray-600">{t.domain}</td>
             <td class="p-4">
@@ -36,8 +36,14 @@ const tenants = await pb.collection('tenants').getFullList({
                 {t.active ? 'Active' : 'Disabled'}
                </span>
             </td>
-            <td class="p-4 text-right">
-              <a href={`/admin/tenants/${t.id}`} class="text-blue-600 hover:underline">Config</a>
+            <td class="p-4 text-right space-x-3">
+              <a href={`/admin/tenants/${t.id}`} class="text-blue-600 hover:underline text-sm">Config</a>
+              <button 
+                onclick={`confirmDelete('${t.id}', '${t.name}')`}
+                class="text-red-500 hover:text-red-700 text-sm font-medium"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         ))}
@@ -48,12 +54,29 @@ const tenants = await pb.collection('tenants').getFullList({
   <dialog id="add_modal" class="p-6 rounded-lg shadow-xl">
     <form method="POST" action="/api/create-tenant" class="space-y-4">
         <h2 class="text-lg font-bold">New Tenant</h2>
-        <input name="name" placeholder="Company Name" required class="border p-2 w-full" />
-        <input name="domain" placeholder="example.com" required class="border p-2 w-full" />
+        <input name="name" placeholder="Company Name" required class="border p-2 w-full rounded" />
+        <input name="domain" placeholder="example.com" required class="border p-2 w-full rounded" />
         <div class="flex justify-end gap-2">
-            <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Create</button>
+            <button type="button" onclick="this.closest('dialog').close()" class="px-4 py-2 text-gray-600">Cancel</button>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow-sm hover:bg-blue-700">Create</button>
         </div>
     </form>
   </dialog>
+
+  <script is:inline>
+    async function confirmDelete(id, name) {
+      if (!confirm(`Are you sure you want to delete ${name}? All associated data will be removed.`)) return;
+      
+      try {
+        const response = await fetch(`/api/delete-tenant?id=${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert("Failed to delete tenant.");
+        }
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+    }
+  </script>
 </Layout>
