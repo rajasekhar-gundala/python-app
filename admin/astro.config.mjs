@@ -6,7 +6,11 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   // CRITICAL: Tells Astro to run as a dynamic server (SSR)
-  output: 'server', 
+  output: 'server',
+
+  security: {
+    checkOrigin: false
+  },
 
   adapter: node({
     mode: 'standalone'
