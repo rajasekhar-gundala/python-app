@@ -3,71 +3,59 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
+  hideNav?: boolean; // New prop to force-hide all menus
 }
 
-const { title } = Astro.props;
+const { title, hideNav = false } = Astro.props;
 
-// 1. Detect if we are on a public-facing page
-const publicPages = ['/', '/login', '/signup', '/contact', '/privacy', '/terms', '/signup-success'];
-const isPublicPage = publicPages.includes(Astro.url.pathname);
+// Determine if this is an admin page based on URL
+const isAdminPage = Astro.url.pathname.startsWith('/admin') || 
+                   ['/inquiries', '/broadcast'].some(p => Astro.url.pathname.includes(p));
 
-// 2. Access user from locals (populated by your middleware)
 const user = Astro.locals.user;
 ---
 
 <!doctype html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="generator" content={Astro.generator} />
     <title>{title} | Jammetry AI</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body class="antialiased text-gray-900 bg-white">
     
-    {/* Only show this Nav if NOT on a public page (i.e., show it on /admin/* pages) */}
-    {!isPublicPage && (
+    {/* 1. ADMIN NAVIGATION: Only shows on /admin pages AND if NOT explicitly hidden */}
+    {!hideNav && isAdminPage && (
       <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between h-16">
-            <div class="flex">
-              <div class="flex-shrink-0 flex items-center">
-                <span class="text-xl font-bold text-blue-600">AI Platform</span>
-              </div>
-              <div class="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8 items-center">
-                <a href="/admin/tenants" class="text-gray-600 hover:text-blue-600 font-medium text-sm">Tenants</a>
-                <a href="/admin/analytics" class="text-gray-600 hover:text-blue-600 font-medium text-sm">Analytics</a>
-                <a href="/admin/inquiries" class="text-gray-600 hover:text-blue-600 font-medium text-sm">Inquiries</a>
-                <a href="/admin/broadcast" class="text-gray-600 hover:text-blue-600 font-medium text-sm">Broadcast</a>
+            <div class="flex items-center gap-8">
+              <span class="text-xl font-bold text-blue-600">AI Platform</span>
+              <div class="hidden md:flex gap-6">
+                <a href="/admin/tenants" class="text-sm font-medium text-gray-600 hover:text-blue-600">Tenants</a>
+                <a href="/admin/analytics" class="text-sm font-medium text-gray-600 hover:text-blue-600">Analytics</a>
+                <a href="/admin/inquiries" class="text-sm font-medium text-gray-600 hover:text-blue-600">Inquiries</a>
+                <a href="/admin/broadcast" class="text-sm font-medium text-gray-600 hover:text-blue-600">Broadcast</a>
               </div>
             </div>
-
             <div class="flex items-center gap-4">
-              {user ? (
-                <div class="flex items-center gap-4">
-                  <span class="text-xs text-gray-500 hidden md:block">{user.email}</span>
-                  <a href="/logout" class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-md hover:bg-red-100 transition-colors">Logout</a>
-                </div>
-              ) : (
-                <a href="/login" class="text-sm font-medium text-blue-600">Login</a>
-              )}
+              {user && <span class="text-xs text-gray-400">{user.email}</span>}
+              <a href="/logout" class="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-md">Logout</a>
             </div>
           </div>
         </div>
       </nav>
     )}
 
+    {/* 2. MAIN CONTENT SLOT */}
     <slot />
 
-    {/* Only show the simple admin footer if NOT on a public page (Landing page has its own footer) */}
-    {!isPublicPage && (
-      <footer class="mt-20 py-10 border-t border-gray-100 text-center text-xs text-gray-400">
-        &copy; 2026 Jammetry AI Automation. Running on 2 vCPU / 8GB RAM.
+    {/* 3. ADMIN FOOTER: Only on admin pages */}
+    {!hideNav && isAdminPage && (
+      <footer class="py-10 text-center text-xs text-gray-400 border-t border-gray-50">
+        &copy; 2026 Jammetry AI. Platform Engine 1.0
       </footer>
     )}
   </body>

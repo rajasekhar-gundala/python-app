@@ -2,51 +2,87 @@
 import Layout from '../layouts/Layout.astro';
 import '../styles/global.css';
 
-// We'll pass the new tenant ID in the URL: /signup-success?id=TENANT_ID
-const tenantId = Astro.url.searchParams.get('id') || 'YOUR_ID_HERE';
+// 1. Get the Tenant ID from the URL (passed by create-tenant.ts)
+const tenantId = Astro.url.searchParams.get('id');
 const dashboardUrl = "/login";
+
+// 2. Fallback if something went wrong with the ID
+const displayId = tenantId || 'PENDING_ID';
+const widgetUrl = `https://admin.jammetry.com/widget/${displayId}.js`;
 ---
 
 <Layout title="Registration Successful!">
   <main class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-    <div class="max-w-2xl w-full bg-white p-10 rounded-2xl shadow-xl border border-gray-100 text-center">
-      <div class="mb-6 inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full text-4xl">
+    <div class="max-w-2xl w-full bg-white p-10 rounded-3xl shadow-2xl border border-gray-100 text-center">
+      
+      <div class="mb-8 inline-flex items-center justify-center w-24 h-24 bg-green-50 text-green-500 rounded-full text-5xl shadow-inner">
         🎉
       </div>
       
-      <h1 class="text-3xl font-extrabold text-gray-900 mb-4">You're All Set!</h1>
-      <p class="text-gray-600 text-lg mb-8">
-        Your AI Assistant has been provisioned. Check your email for a password reset link to access your full dashboard.
+      <h1 class="text-4xl font-black text-gray-900 mb-4 tracking-tight">You're All Set!</h1>
+      <p class="text-gray-600 text-lg mb-10 leading-relaxed">
+        Your AI Assistant has been provisioned. We've sent a **password reset link** to your email so you can set your permanent password and access the dashboard.
       </p>
 
-      <div class="bg-gray-900 rounded-xl p-6 text-left mb-8 relative group">
-        <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">
-          1. Copy your Widget Script
-        </h3>
-        <pre class="text-blue-400 font-mono text-sm overflow-x-auto"><code>&lt;script src="https://admin.yourdomain.com/widget/{tenantId}.js"&gt;&lt;/script&gt;</code></pre>
+      <div class="bg-gray-900 rounded-2xl p-8 text-left mb-10 relative group border border-gray-800 shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-blue-400 text-xs font-bold uppercase tracking-widest">
+            Step 1: Install the Widget
+          </h3>
+          <button 
+            id="copyBtn"
+            class="text-xs bg-gray-800 text-gray-300 px-3 py-1 rounded-lg hover:bg-blue-600 hover:text-white transition-all font-bold"
+          >
+            Copy Code
+          </button>
+        </div>
         
-        <p class="text-gray-500 text-xs mt-4">
-          Paste this right before the <code>&lt;/body&gt;</code> tag on your website.
+        <div class="bg-black/50 p-4 rounded-lg border border-gray-700/50">
+          <pre id="widgetCode" class="text-green-400 font-mono text-sm overflow-x-auto whitespace-pre-wrap leading-relaxed"><code>&lt;script src="{widgetUrl}"&gt;&lt;/script&gt;</code></pre>
+        </div>
+        
+        <p class="text-gray-500 text-xs mt-6 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+          Paste this snippet right before the closing <code>&lt;/body&gt;</code> tag of your website.
         </p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <a href={dashboardUrl} class="btn-primary py-3">
+        <a href={dashboardUrl} class="bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
           Go to Dashboard
         </a>
-        <a href="/" class="bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition-all">
+        <a href="/" class="bg-gray-100 text-gray-700 py-4 rounded-xl font-bold hover:bg-gray-200 transition-all">
           Back to Home
         </a>
       </div>
 
-      <p class="mt-8 text-sm text-gray-400">
-        Using our Starter Tier: 100 free chats included this month.
-      </p>
+      <div class="mt-10 pt-8 border-t border-gray-50">
+        <p class="text-sm text-gray-400 font-medium italic">
+          Starter Tier Active: 100 free AI chats included every month.
+        </p>
+      </div>
     </div>
   </main>
 </Layout>
 
 <script is:inline>
-  // Simple "Click to Copy" functionality if you want to add a button later
-  console.log("Onboarding initialized for tenant:", new URLSearchParams(window.location.search).get('id'));
+  // CLIPBOARD LOGIC
+  const copyBtn = document.getElementById('copyBtn');
+  const codeBlock = document.getElementById('widgetCode');
+
+  if (copyBtn && codeBlock) {
+    copyBtn.addEventListener('click', () => {
+      const text = codeBlock.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = '✅ Copied!';
+        copyBtn.classList.add('bg-green-600');
+        
+        setTimeout(() => {
+          copyBtn.innerText = originalText;
+          copyBtn.classList.remove('bg-green-600');
+        }, 2000);
+      });
+    });
+  }
 </script>
