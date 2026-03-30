@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import '../styles/global.css';
 
-// Variables initialized at the top for build-time safety
 let success = false;
 let error = '';
 
@@ -10,23 +9,72 @@ if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
     const data = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      subject: formData.get('subject'),
-      message: formData.get('message'),
+      name: formData.get('name')?.toString(),
+      email: formData.get('email')?.toString(),
+      subject: formData.get('subject')?.toString(),
+      message: formData.get('message')?.toString(),
       status: 'new'
     };
 
     const pb = Astro.locals.pb;
     await pb.collection('inquiries').create(data);
     success = true;
-  } catch (e) {
+  } catch (e: any) {
     error = "Something went wrong. Please try again or email support@jammetry.com";
   }
 }
 ---
 
-<Layout title="Contact Support - Jammetry AI">
-  <main class="py-20 bg-gray-50 min-h-screen px-4">
-    </main>
+<Layout title="Contact Support">
+  <main class="py-20 bg-gray-50 min-h-screen px-4 flex items-center">
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+      
+      <div class="bg-blue-600 p-12 text-white flex flex-col justify-center">
+        <h1 class="text-4xl font-bold mb-6">Get in Touch</h1>
+        <p class="text-blue-100 mb-10 text-lg leading-relaxed">
+          Have questions about our AI platform? Our team is ready to help you automate your business workflow.
+        </p>
+        <div class="space-y-6">
+          <div class="flex items-center gap-4">
+            <span class="p-3 bg-blue-500 rounded-lg">📧</span>
+            <p class="font-medium text-blue-50">support@jammetry.com</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="p-3 bg-blue-500 rounded-lg">⚡</span>
+            <p class="font-medium text-blue-50">Server Status: 8GB RAM Operational</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-12 bg-white">
+        {success ? (
+          <div class="text-center py-10">
+            <div class="text-6xl mb-6">✅</div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Message Sent!</h2>
+            <p class="text-gray-500 mb-8">Our team will get back to you within 24 hours.</p>
+            <a href="/" class="text-blue-600 font-bold hover:underline">← Back to Home</a>
+          </div>
+        ) : (
+          <form method="POST" class="space-y-6">
+            {error && <div class="p-3 bg-red-50 text-red-600 text-sm rounded-lg">{error}</div>}
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Your Name</label>
+              <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+              <input type="email" name="email" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Message</label>
+              <textarea name="message" required rows="4" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+              Send Message
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  </main>
 </Layout>
