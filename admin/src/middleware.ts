@@ -1,58 +1,62 @@
 import { defineMiddleware } from "astro:middleware";
 import PocketBase from "pocketbase";
 
-export const onRequest = defineMiddleware(async ({ locals, request, redirect, cookies }, next) => {
-    // 1. Initialize PocketBase client for this request
-    // Using the internal Docker URL for speed and security
+export const onRequest = defineMiddleware(async ({ locals, request, redirect, cookies, url }, next) => {
+    // 1. Initialize PocketBase client
+    // Internal Docker URL is correct for 8GB RAM VPS performance
     const pb = new PocketBase("http://pocketbase:8080");
     
-    // 2. Load the auth store from the request cookie
+    // 2. Load the auth store from cookie
     const authCookie = cookies.get("pb_auth")?.value || "";
     pb.authStore.loadFromCookie(authCookie);
 
     try {
-        // 3. Refresh the session if it exists to keep it valid
+        // 3. Refresh session if valid
         if (pb.authStore.isValid) {
+            // This ensures we have the latest user data (role, name, etc.)
             await pb.collection("users").authRefresh();
-            locals.user = pb.authStore.record;
+            locals.user = pb.authStore.model; 
         } else {
             locals.user = null;
         }
     } catch (_) {
-        // Clear the store if the token is expired or invalid
         pb.authStore.clear();
         locals.user = null;
     }
 
-    // 4. Attach the PB instance to locals so pages can use it
+    // 4. Attach PB to locals for page-level access
     locals.pb = pb;
 
     // 5. SECURITY: Protected Route Logic
-    const url = new URL(request.url);
     const isAdminRoute = url.pathname.startsWith("/admin");
     const isLoginPage = url.pathname === "/login";
+    const isSignupPage = url.pathname === "/signup";
 
-    // IF trying to access /admin WITHOUT being logged in -> Redirect to Login
+    // Redirect to login if accessing admin unauthorized
     if (isAdminRoute && !locals.user) {
         return redirect("/login");
     }
 
-    // IF trying to access /login WHILE already logged in -> Redirect to Admin
-    if (isLoginPage && locals.user) {
+    // Redirect to admin if accessing auth pages while logged in
+    if ((isLoginPage || isSignupPage) && locals.user) {
         return redirect("/admin/tenants");
     }
 
     // 6. Execute the request
     const response = await next();
 
-    // 7. Sync the auth store back to the cookie so the session persists in the browser
-    response.headers.append("set-cookie", pb.authStore.exportToCookie({
+    // 7. Sync the auth store back to the cookie
+    // We use exportToCookie to ensure the browser saves the refreshed token
+    const cookieString = pb.authStore.exportToCookie({
         httpOnly: true,
-        secure: true, // Required for Caddy/HTTPS
+        secure: true, // Crucial for Caddy/HTTPS
         sameSite: "lax",
         path: "/",
         maxAge: 60 * 60 * 24 * 7 // 7 days
-    }));
+    });
+
+    // Important: Append the cookie to the response headers
+    response.headers.append("set-cookie", cookieString);
 
     return response;
 });
