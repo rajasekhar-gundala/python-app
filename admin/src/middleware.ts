@@ -4,7 +4,7 @@ import PocketBase from "pocketbase";
 export const onRequest = defineMiddleware(async ({ locals, request, redirect, cookies, url }, next) => {
     // 1. Initialize PocketBase client
     // Internal Docker URL is correct for 8GB RAM VPS performance
-    const pb = new PocketBase("https://api.jammetry.com");
+    const pb = new PocketBase("http://pocketbase:8080");
     
     // 2. Load the auth store from cookie
     const authCookie = cookies.get("pb_auth")?.value || "";

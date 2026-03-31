@@ -8,12 +8,13 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.formData();
     
+    // Keep these trims! They were the real fix.
     const email = data.get('email')?.toString().trim(); 
-    const password = data.get('password')?.toString().trim(); // Added trim here too
+    const password = data.get('password')?.toString().trim();
 
     if (email && password) {
-      // USE THE CONFIRMED PUBLIC API
-      const pb = new PocketBase("https://api.jammetry.com");
+      // Revert to internal network
+      const pb = new PocketBase("http://pocketbase:8080");
       
       await pb.collection('users').authWithPassword(email, password);
       
