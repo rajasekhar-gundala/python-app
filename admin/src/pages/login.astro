@@ -1,29 +1,36 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import PocketBase from 'pocketbase';
 
 let errorMessage = '';
 
 if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.formData();
-    const email = data.get('email')?.toString();
+    
+    // 1. THE FIX: .trim() removes hidden spaces from autofill or copy/pasting
+    const email = data.get('email')?.toString().trim(); 
     const password = data.get('password')?.toString();
 
+    console.log(`[LOGIN ATTEMPT] Email: '${email}'`);
+
     if (email && password) {
-      const pb = Astro.locals.pb;
+      // 2. FRESH INSTANCE: Bypasses any middleware quirks
+      const pb = new PocketBase("http://pocketbase:8080");
       
-      // 1. Authenticate the user
-      await pb.collection('users').authWithPassword(email, password);
+      console.log("[LOGIN] Sending to PocketBase...");
       
-      // 2. Generate the cookie string with relaxed settings for testing
-      // We are removing 'secure: true' temporarily to see if Caddy's SSL termination is the culprit
+      // 3. AUTHENTICATE
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      
+      console.log("[LOGIN] Success! User ID:", authData.record.id);
+      
       const cookieString = pb.authStore.exportToCookie({
         httpOnly: true,
         sameSite: 'lax',
-        path: '/'
+        path: '/' // Removed 'secure: true' temporarily to ensure Caddy compatibility
       });
 
-      // 3. Force the Redirect with the Cookie
       return new Response(null, {
         status: 303,
         headers: {
@@ -34,8 +41,11 @@ if (Astro.request.method === 'POST') {
       });
     }
   } catch (e: any) {
-    console.error("Login Error:", e.message); // This will show in your docker logs
-    errorMessage = 'Invalid email or password.';
+    // 4. DEEP LOGGING: This will tell us EXACTLY why PocketBase is mad
+    console.error("[LOGIN FAILED] Detailed Reason:", e.response || e.message);
+    
+    // Extract the real error message from the database
+    errorMessage = e.response?.message || 'Invalid email or password.';
   }
 }
 ---
