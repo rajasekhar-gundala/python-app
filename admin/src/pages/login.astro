@@ -8,27 +8,19 @@ if (Astro.request.method === 'POST') {
   try {
     const data = await Astro.request.formData();
     
-    // 1. THE FIX: .trim() removes hidden spaces from autofill or copy/pasting
     const email = data.get('email')?.toString().trim(); 
-    const password = data.get('password')?.toString();
-
-    console.log(`[LOGIN ATTEMPT] Email: '${email}'`);
+    const password = data.get('password')?.toString().trim(); // Added trim here too
 
     if (email && password) {
-      // 2. FRESH INSTANCE: Bypasses any middleware quirks
-      const pb = new PocketBase("http://pocketbase:8080");
+      // USE THE CONFIRMED PUBLIC API
+      const pb = new PocketBase("https://api.jammetry.com");
       
-      console.log("[LOGIN] Sending to PocketBase...");
-      
-      // 3. AUTHENTICATE
-      const authData = await pb.collection('users').authWithPassword(email, password);
-      
-      console.log("[LOGIN] Success! User ID:", authData.record.id);
+      await pb.collection('users').authWithPassword(email, password);
       
       const cookieString = pb.authStore.exportToCookie({
         httpOnly: true,
         sameSite: 'lax',
-        path: '/' // Removed 'secure: true' temporarily to ensure Caddy compatibility
+        path: '/' 
       });
 
       return new Response(null, {
@@ -41,11 +33,8 @@ if (Astro.request.method === 'POST') {
       });
     }
   } catch (e: any) {
-    // 4. DEEP LOGGING: This will tell us EXACTLY why PocketBase is mad
-    console.error("[LOGIN FAILED] Detailed Reason:", e.response || e.message);
-    
-    // Extract the real error message from the database
-    errorMessage = e.response?.message || 'Invalid email or password.';
+    console.error("[LOGIN FAILED]", e.response?.message || e.message);
+    errorMessage = 'Invalid email or password.';
   }
 }
 ---
