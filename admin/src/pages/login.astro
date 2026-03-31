@@ -1,5 +1,7 @@
 ---
+---
 import Layout from '../layouts/Layout.astro';
+
 let errorMessage = '';
 
 if (Astro.request.method === 'POST') {
@@ -10,14 +12,36 @@ if (Astro.request.method === 'POST') {
 
     if (email && password) {
       const pb = Astro.locals.pb;
+      
+      // 1. Authenticate the user
       await pb.collection('users').authWithPassword(email, password);
-      Astro.response.headers.append('set-cookie', pb.authStore.exportToCookie());
-      return Astro.redirect('/admin/tenants');
+      
+      // 2. Generate the secure cookie string
+      const cookieString = pb.authStore.exportToCookie({
+        httpOnly: true,
+        secure: true, // Required for your HTTPS Caddy setup
+        sameSite: 'lax',
+        path: '/'
+      });
+
+      // 3. The Fix: Return a manual Response containing BOTH the redirect and the cookie
+      return new Response(null, {
+        status: 303,
+        headers: {
+          'Location': '/admin/tenants',
+          'Set-Cookie': cookieString,
+          'Cache-Control': 'no-cache'
+        }
+      });
     }
-  } catch (e) {
+  } catch (e: any) {
+    console.error("Login failed:", e.message);
     errorMessage = 'Invalid email or password.';
   }
 }
+---
+
+<Layout title="Login" hideNav={true}>
 ---
 
 <Layout title="Login" hideNav={true}>
