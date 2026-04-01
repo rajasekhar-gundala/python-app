@@ -1,66 +1,115 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-const pb = Astro.locals.pb;
 
-// Fetch tenants from PocketBase
-const tenants = await pb.collection('tenants').getFullList({
-    sort: '-created',
-});
+const pb = Astro.locals.pb;
+const user = Astro.locals.user;
+
+let tenants: any[] = [];
+let fetchError = '';
+
+try {
+  // Fetch ONLY the tenants owned by the currently logged-in user
+  // This satisfies PocketBase security rules and prevents the page from crashing
+  if (user) {
+    tenants = await pb.collection('tenants').getFullList({
+      filter: `owner="${user.id}"`,
+      sort: '-created',
+    });
+  }
+} catch (e: any) {
+  console.error("[TENANT FETCH ERROR]", e.message);
+  fetchError = 'Unable to load your tenants. Please check database permissions.';
+}
 ---
 
 <Layout title="Tenant Management">
   <main class="p-8 max-w-4xl mx-auto">
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-2xl font-bold">Your Customers (Tenants)</h1>
-      <button onclick="document.getElementById('add_modal').showModal()" class="btn-primary">
+      <div>
+        <h1 class="text-2xl font-bold">Your AI Assistants</h1>
+        {user && <p class="text-gray-500 text-sm">Logged in as {user.email}</p>}
+      </div>
+      <button onclick="document.getElementById('add_modal').showModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition-all">
         + Add Tenant
       </button>
     </div>
 
-    <table class="w-full border-collapse bg-white shadow rounded-lg overflow-hidden">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="p-4 text-left">Company Name</th>
-          <th class="p-4 text-left">Website URL</th>
-          <th class="p-4 text-left">Status</th>
-          <th class="p-4 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {tenants.map((t) => (
-          <tr class="border-t" id={`row-${t.id}`}>
-            <td class="p-4 font-medium">{t.name}</td>
-            <td class="p-4 text-gray-600">{t.domain}</td>
-            <td class="p-4">
-               <span class={`px-2 py-1 rounded text-xs ${t.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                {t.active ? 'Active' : 'Disabled'}
-               </span>
-            </td>
-            <td class="p-4 text-right space-x-3">
-              <a href={`/admin/tenants/${t.id}`} class="text-blue-600 hover:underline text-sm">Config</a>
-              <button 
-                onclick={`confirmDelete('${t.id}', '${t.name}')`}
-                class="text-red-500 hover:text-red-700 text-sm font-medium"
-              >
-                Delete
-              </button>
-            </td>
+    {fetchError && (
+      <div class="bg-red-50 text-red-600 p-4 rounded-lg mb-6 border border-red-100">
+        {fetchError}
+      </div>
+    )}
+
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+      <table class="w-full border-collapse">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="p-4 text-left font-semibold text-gray-700">Company Name</th>
+            <th class="p-4 text-left font-semibold text-gray-700">Website URL</th>
+            <th class="p-4 text-left font-semibold text-gray-700">Status</th>
+            <th class="p-4 text-right font-semibold text-gray-700">Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {tenants.length === 0 && !fetchError ? (
+            <tr>
+              <td colspan="4" class="p-8 text-center text-gray-500">
+                You haven't created any AI tenants yet. Click "Add Tenant" to get started.
+              </td>
+            </tr>
+          ) : (
+            tenants.map((t) => (
+              <tr class="border-b last:border-0 hover:bg-gray-50 transition-colors" id={`row-${t.id}`}>
+                <td class="p-4 font-medium text-gray-900">{t.name}</td>
+                <td class="p-4 text-gray-600">{t.domain}</td>
+                <td class="p-4">
+                   <span class={`px-2 py-1 rounded-full text-xs font-medium ${t.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {t.active ? 'Active' : 'Disabled'}
+                   </span>
+                </td>
+                <td class="p-4 text-right space-x-4">
+                  <a href={`/admin/tenants/${t.id}`} class="text-blue-600 hover:text-blue-800 font-medium text-sm">Configure</a>
+                  <button 
+                    onclick={`confirmDelete('${t.id}', '${t.name}')`}
+                    class="text-red-500 hover:text-red-700 text-sm font-medium"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   </main>
 
-  <dialog id="add_modal" class="p-6 rounded-lg shadow-xl">
-    <form method="POST" action="/api/create-tenant" class="space-y-4">
-        <h2 class="text-lg font-bold">New Tenant</h2>
-        <input name="name" placeholder="Company Name" required class="border p-2 w-full rounded" />
-        <input name="domain" placeholder="example.com" required class="border p-2 w-full rounded" />
-        <div class="flex justify-end gap-2">
-            <button type="button" onclick="this.closest('dialog').close()" class="px-4 py-2 text-gray-600">Cancel</button>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded shadow-sm hover:bg-blue-700">Create</button>
-        </div>
-    </form>
+  <dialog id="add_modal" class="p-0 rounded-xl shadow-2xl border-0 backdrop:bg-gray-900/50">
+    <div class="p-6 w-full max-w-md">
+      <form method="POST" action="/api/create-tenant" class="space-y-4">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Create New AI Assistant</h2>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+            <input name="name" placeholder="Acme Corp" required class="border border-gray-300 p-2.5 w-full rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+            <input name="domain" placeholder="example.com" required class="border border-gray-300 p-2.5 w-full rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Admin Email</label>
+            <input name="email" type="email" value={user?.email} required class="border border-gray-300 p-2.5 w-full rounded-lg bg-gray-50 text-gray-600" readonly />
+          </div>
+
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+              <button type="button" onclick="this.closest('dialog').close()" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg">Cancel</button>
+              <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg shadow-sm hover:bg-blue-700 font-bold">Create</button>
+          </div>
+      </form>
+    </div>
   </dialog>
 
   <script is:inline>
