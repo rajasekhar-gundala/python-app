@@ -13,23 +13,17 @@ if (Astro.request.method === 'POST') {
     if (email && password) {
       const pb = new PocketBase("http://pocketbase:8080");
       
-      // Attempt Authentication directly
+      // 1. Authenticate the user
       await pb.collection('users').authWithPassword(email, password);
       
-      const cookieString = pb.authStore.exportToCookie({
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/' 
+      // 2. Save the full AuthStore state to the Astro cookie
+      // We set secure: false temporarily to ensure it works over standard HTTP while testing
+      Astro.cookies.set('pb_auth', pb.authStore.exportToCookie({ httpOnly: true, secure: false }), {
+        path: '/'
       });
 
-      return new Response(null, {
-        status: 303,
-        headers: {
-          'Location': '/admin/tenants',
-          'Set-Cookie': cookieString,
-          'Cache-Control': 'no-cache'
-        }
-      });
+      // 3. Native Astro Redirect
+      return Astro.redirect('/admin/tenants');
     }
   } catch (e: any) {
     console.error("[LOGIN FAILED]", e.response?.message || e.message);
