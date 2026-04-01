@@ -13,15 +13,7 @@ if (Astro.request.method === 'POST') {
     if (email && password) {
       const pb = new PocketBase("http://pocketbase:8080");
       
-      // --- THE DIAGNOSTIC CHECK ---
-      try {
-        const userCheck = await pb.collection('users').getFirstListItem(`email="${email}"`);
-        console.log(`[DB CHECK] SUCCESS! User found in internal DB. ID: ${userCheck.id}`);
-      } catch (checkError) {
-        console.error(`[DB CHECK FATAL] User ${email} DOES NOT EXIST in internal http://pocketbase:8080 database!`);
-      }
-      // ----------------------------
-      
+      // Attempt Authentication directly
       await pb.collection('users').authWithPassword(email, password);
       
       const cookieString = pb.authStore.exportToCookie({
