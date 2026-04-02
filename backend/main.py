@@ -118,6 +118,14 @@ async def ingest_url(tenant_id: str, data: dict):
     crawl_website(tenant_id, url)
     return {"status": "processing"}
 
+@app.post("/ingest/api/{tenant_id}")
+async def ingest_api_route(tenant_id: str, data: dict):
+    url = data.get("url")
+    if not url: return {"error": "API URL required"}
+    # Trigger your custom API ingestion logic
+    ingest_external_api(tenant_id, url)
+    return {"status": "processing"}
+
 @app.post("/ingest/upload/{tenant_id}")
 async def upload_doc(tenant_id: str, file: UploadFile = File(...)):
     content = await file.read()
