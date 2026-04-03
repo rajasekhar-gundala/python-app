@@ -38,12 +38,11 @@ pb = PocketBase(PB_URL)
 
 @app.on_event("startup")
 async def startup_event():
-    """Authenticate as Admin on startup to bypass security rules."""
+    """Authenticate as Superuser on startup to bypass security rules."""
     try:
-        # Note: pocketbase-python uses sync calls for auth usually, 
-        # but we wrap it to ensure the backend is ready.
-        pb.admins.auth_with_password(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD)
-        print("✅ Backend authenticated as PocketBase Admin")
+        # 👇 CHANGED: Authenticate using _superusers collection instead of admins
+        pb.collection('_superusers').auth_with_password(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD)
+        print("✅ Backend authenticated as PocketBase Superuser")
     except Exception as e:
         print(f"❌ Failed to authenticate with PocketBase: {e}")
 

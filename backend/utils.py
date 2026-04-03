@@ -12,7 +12,10 @@ def update_tenant_status(tenant_id: str, status: str):
         print(f"Attempting to update PB status to '{status}' for {tenant_id}...", flush=True)
         
         pb = PocketBase(PB_URL)
-        pb.admins.auth_with_password(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD)
+        
+        # 👇 CHANGED: Authenticate using _superusers collection instead of admins
+        pb.collection('_superusers').auth_with_password(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD)
+        
         pb.collection('tenants').update(tenant_id, {"training_status": status})
         
         print(f"✅ SUCCESS: Status updated to '{status}'", flush=True)

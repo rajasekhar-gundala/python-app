@@ -13,7 +13,7 @@ async def get_admin_headers(client: httpx.AsyncClient):
     This prevents 403 Forbidden errors when accessing locked collections.
     """
     try:
-        auth_url = f"{PB_URL}/api/admins/auth-with-password"
+        auth_url = f"{PB_URL}/api/collections/_superusers/auth-with-password"
         response = await client.post(auth_url, json={
             "identity": PB_ADMIN_EMAIL,
             "password": PB_ADMIN_PASSWORD
