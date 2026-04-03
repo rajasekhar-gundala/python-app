@@ -112,25 +112,34 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
 # --- INGESTION ENDPOINTS ---
 
 @app.post("/ingest/url/{tenant_id}")
-async def ingest_url(tenant_id: str, data: dict):
+async def ingest_url(tenant_id: str, data: dict, background_tasks: BackgroundTasks):
     url = data.get("url")
     if not url: return {"error": "URL required"}
-    crawl_website(tenant_id, url)
+    
+    # Send the heavy lifting to the background so the API responds instantly
+    background_tasks.add_task(crawl_website, tenant_id, url)
     return {"status": "processing"}
 
 @app.post("/ingest/api/{tenant_id}")
-async def ingest_api_route(tenant_id: str, data: dict):
+async def ingest_api_route(tenant_id: str, data: dict, background_tasks: BackgroundTasks):
     url = data.get("url")
     if not url: return {"error": "API URL required"}
-    # Trigger your custom API ingestion logic
-    ingest_external_api(tenant_id, url)
+    
+    background_tasks.add_task(ingest_external_api, tenant_id, url)
     return {"status": "processing"}
 
 @app.post("/ingest/upload/{tenant_id}")
-async def upload_doc(tenant_id: str, file: UploadFile = File(...)):
+async def upload_doc(tenant_id: str, file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
     content = await file.read()
-    num_chunks = process_document(tenant_id, file.filename, content)
-    return {"status": "success", "chunks": num_chunks}
+    
+    # Note: File uploads are a bit tricky with background tasks because the file 
+    # closes after the request ends. We pass the raw bytes (content) to avoid this.
+    if background_tasks:
+        background_tasks.add_task(process_document, tenant_id, file.filename, content)
+    else:
+        process_document(tenant_id, file.filename, content)
+        
+    return {"status": "processing"}
 
 @app.get("/health")
 async def health():
