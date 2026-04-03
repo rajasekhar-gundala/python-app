@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 # Global Embedding Model (approx 80MB RAM)
 embed_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-db = lancedb.connect("./storage/lancedb")
+db = lancedb.connect("/app/storage/lancedb")
 
 def get_or_create_table(tenant_id: str):
     table_name = f"tenant_{tenant_id}"
