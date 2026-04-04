@@ -5,6 +5,9 @@ from utils import update_tenant_status  # 👉 IMPORT THE HELPER
 
 def crawl_website(tenant_id: str, url: str):
     try:
+        # Force print to Docker logs
+        print(f"Starting to crawl {url} for {tenant_id}...", flush=True)
+        
         downloaded = trafilatura.fetch_url(url)
         content = trafilatura.extract(downloaded)
         if content:
@@ -14,20 +17,12 @@ def crawl_website(tenant_id: str, url: str):
         
         # 👉 Mark as completed
         update_tenant_status(tenant_id, "completed")
-        print(f"Successfully trained bot for tenant {tenant_id}")
+        print(f"✅ Successfully trained bot for tenant {tenant_id}", flush=True)
         
     except Exception as e:
-        print(f"Crawling failed: {e}")
+        print(f"❌ Crawling failed: {e}", flush=True)
         # 👉 Mark as error
         update_tenant_status(tenant_id, "error")
-
-def crawl_website(tenant_id: str, url: str):
-    downloaded = trafilatura.fetch_url(url)
-    content = trafilatura.extract(downloaded)
-    if content:
-        # Simple chunking by paragraph/length
-        chunks = [content[i:i+1000] for i in range(0, len(content), 800)]
-        add_to_kb(tenant_id, chunks, url)
 
 def process_pdf(tenant_id: str, file_path: str):
     reader = PdfReader(file_path)

@@ -18,6 +18,7 @@ def extract_text_from_docx(file_content):
     return "\n".join([para.text for para in doc.paragraphs])
 
 def process_document(tenant_id: str, file_name: str, file_content: bytes):
+    print(f"Starting document processing for {file_name}...", flush=True)
     try:
         text = ""
         if file_name.endswith('.pdf'):
@@ -31,16 +32,13 @@ def process_document(tenant_id: str, file_name: str, file_content: bytes):
             chunks = [text[i:i+800] for i in range(0, len(text), 700)]
             add_to_kb(tenant_id, chunks, source=file_name)
             
-            # 👉 Mark as completed
-            update_tenant_status(tenant_id, "completed")
-            return len(chunks)
-        
-        # Mark as completed even if empty, so UI doesn't spin forever
+        # 👉 Mark as completed
         update_tenant_status(tenant_id, "completed")
-        return 0
+        print(f"✅ Document {file_name} processed successfully", flush=True)
+        return True
         
     except Exception as e:
-        print(f"Doc ingest failed: {e}")
+        print(f"❌ Doc ingest failed: {e}", flush=True)
         # 👉 Mark as error
         update_tenant_status(tenant_id, "error")
-        return 0
+        return False
