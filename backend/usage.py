@@ -56,7 +56,6 @@ async def check_usage_limit(tenant_id: str, limit: int = 100):
             print(f"⚠️ Usage Check Error: {e}")
             return True, 0
 
-# 👉 UPDATED: Now forcefully accepts visitor_id and saves it
 async def log_chat(tenant_id: str, user_query: str, ai_response: str, message_id: str = None, visitor_id: str = None):
     url = f"{PB_URL}/api/collections/chat_history/records"
     payload = {
@@ -69,7 +68,6 @@ async def log_chat(tenant_id: str, user_query: str, ai_response: str, message_id
     if message_id:
         payload["id"] = message_id
         
-    # 👉 Injects the specific user's ID into the database!
     if visitor_id:
         payload["visitor_id"] = visitor_id
 
@@ -79,7 +77,27 @@ async def log_chat(tenant_id: str, user_query: str, ai_response: str, message_id
             response = await client.post(url, json=payload, headers=headers)
             if response.status_code != 200:
                 print(f"❌ Failed to log chat: {response.text}")
-            else:
-                print(f"✅ Chat logged successfully for tenant {tenant_id}")
         except Exception as e:
             print(f"⚠️ Background Logging Error: {e}")
+
+# 👉 NEW: The function that saves the lead to PocketBase
+async def capture_lead(tenant_id: str, email: str, message: str):
+    """Saves a detected email address to the tenant_leads collection."""
+    url = f"{PB_URL}/api/collections/tenant_leads/records"
+    payload = {
+        "tenantId": tenant_id,
+        "visitor_email": email,
+        "visitor_message": message,
+        "status": "new"
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            headers = await get_admin_headers(client)
+            response = await client.post(url, json=payload, headers=headers)
+            if response.status_code == 200:
+                print(f"🎣 LEAD CAPTURED for tenant {tenant_id}: {email}")
+            else:
+                print(f"❌ Failed to capture lead: {response.text}")
+        except Exception as e:
+            print(f"⚠️ Background Lead Capture Error: {e}")

@@ -2,6 +2,7 @@ import os
 import json
 import httpx
 import asyncio
+import re # 👉 NEW: Import the Regular Expression library
 from typing import Optional
 from fastapi import FastAPI, Request, UploadFile, File, BackgroundTasks
 from fastapi.responses import StreamingResponse
@@ -10,14 +11,13 @@ from pocketbase import PocketBase
 
 # Internal Module Imports
 from vector_store import search_kb
-from usage import check_usage_limit, log_chat, get_admin_headers # 👉 CRITICAL: Imported get_admin_headers
+from usage import check_usage_limit, log_chat, get_admin_headers, capture_lead # 👉 NEW: Import capture_lead
 from crawler import crawl_website
 from ingest_docs import process_document
 from ingest_api import ingest_external_api
 
 app = FastAPI(title="AI Automation Multi-tenant Backend")
 
-# 1. CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,19 +26,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Constants
 LLM_SERVER_URL = os.getenv("LLM_API_URL", "http://llama-server:8080/v1/chat/completions")
 PB_URL = os.getenv("PB_URL", "http://pocketbase:8080")
 PB_ADMIN_EMAIL = os.getenv("PB_ADMIN_EMAIL", "admin@example.com")
 PB_ADMIN_PASSWORD = os.getenv("PB_ADMIN_PASSWORD", "your_secure_password")
 MONTHLY_CHAT_LIMIT = 100
 
-# Global PocketBase Client
 pb = PocketBase(PB_URL)
 
 @app.on_event("startup")
 async def startup_event():
-    """Authenticate as Superuser on startup to bypass security rules."""
     try:
         pb.collection('_superusers').auth_with_password(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD)
         print("✅ Backend authenticated as PocketBase Superuser")
@@ -52,14 +49,24 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
     data = await request.json()
     user_query = data.get("message")
     message_id = data.get("message_id")
-    visitor_id = data.get("visitor_id") # 👉 Grabs visitor_id from widget
+    visitor_id = data.get("visitor_id")
     
     if not user_query:
         return {"error": "Message is required"}
 
-    # 1. Usage Guardrail
-    is_allowed, current_count = await check_usage_limit(tenant_id, limit=MONTHLY_CHAT_LIMIT)
+    # 👉 1. THE LEAD SCANNER
+    # Check if the user's message contains an email address format
+    email_match = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', user_query)
+    found_email = False
     
+    if email_match:
+        found_email = True
+        extracted_email = email_match.group(0)
+        # Send it to PocketBase quietly in the background!
+        background_tasks.add_task(capture_lead, tenant_id, extracted_email, user_query)
+
+    # 2. Usage Guardrail
+    is_allowed, current_count = await check_usage_limit(tenant_id, limit=MONTHLY_CHAT_LIMIT)
     if not is_allowed:
         return {
             "error": "Limit Reached",
@@ -67,11 +74,16 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
             "message": "Monthly chat limit reached for this tenant."
         }
 
-    # 2. RAG: Search Knowledge Base
+    # 3. RAG: Search Knowledge Base
     context = search_kb(tenant_id, user_query)
     
-    # 3. Construct Prompt
+    # 👉 4. DYNAMIC SYSTEM PROMPT
     system_content = "You are a helpful AI assistant. Use the context to answer. If unknown, say so."
+    
+    # If we found an email, secretly tell the AI to act like a salesperson!
+    if found_email:
+        system_content += " The user has just provided their email address. Warmly acknowledge it, thank them, and tell them that a human team member will follow up with them shortly at that address. Answer any other questions they had as well."
+
     full_prompt = f"Context:\n{context}\n\nQuestion: {user_query}"
     
     payload = {
@@ -103,12 +115,10 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
             except Exception as e:
                 yield f"data: {json.dumps({'error': 'Inference Error'})}\n\n"
         
-        # 4. Background Logging: Passes both message_id AND visitor_id to PocketBase
         background_tasks.add_task(log_chat, tenant_id, user_query, full_ai_response, message_id, visitor_id)
 
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
-# 👉 NEW: Endpoint to fetch chat history!
 @app.get("/chat/{tenant_id}/history")
 async def get_chat_history(tenant_id: str, visitor_id: str):
     if not visitor_id:
@@ -132,7 +142,6 @@ async def get_chat_history(tenant_id: str, visitor_id: str):
         except Exception as e:
             print(f"⚠️ Failed to fetch history: {e}")
             return {"history": []}
-
 
 # --- INGESTION ENDPOINTS ---
 @app.post("/ingest/url/{tenant_id}")
