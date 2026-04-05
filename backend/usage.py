@@ -56,8 +56,8 @@ async def check_usage_limit(tenant_id: str, limit: int = 100):
             print(f"⚠️ Usage Check Error: {e}")
             return True, 0
 
-# 👉 NEW: Added message_id parameter to the function
-async def log_chat(tenant_id: str, user_query: str, ai_response: str, message_id: str = None):
+# 👉 UPDATED: Now forcefully accepts visitor_id and saves it
+async def log_chat(tenant_id: str, user_query: str, ai_response: str, message_id: str = None, visitor_id: str = None):
     url = f"{PB_URL}/api/collections/chat_history/records"
     payload = {
         "tenantId": tenant_id,
@@ -66,11 +66,10 @@ async def log_chat(tenant_id: str, user_query: str, ai_response: str, message_id
         "status": "completed"
     }
     
-    # 👉 NEW: Inject the 15 character custom ID into PocketBase so we can reference it later!
     if message_id:
         payload["id"] = message_id
-
-    # 👉 NEW: Inject the visitor_id into PocketBase
+        
+    # 👉 Injects the specific user's ID into the database!
     if visitor_id:
         payload["visitor_id"] = visitor_id
 
