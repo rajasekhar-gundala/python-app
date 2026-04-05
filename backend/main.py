@@ -76,13 +76,13 @@ async def chat(tenant_id: str, request: Request, background_tasks: BackgroundTas
 
     # 3. RAG: Search Knowledge Base
     context = search_kb(tenant_id, user_query)
-    
+
     # 👉 4. DYNAMIC SYSTEM PROMPT
     system_content = "You are a helpful AI assistant. Use the context to answer. If unknown, say so."
     
-    # If we found an email, secretly tell the AI to act like a salesperson!
+    # Give the AI a strict, invisible acting cue
     if found_email:
-        system_content += " The user has just provided their email address. Warmly acknowledge it, thank them, and tell them that a human team member will follow up with them shortly at that address. Answer any other questions they had as well."
+        system_content += "\n\n[SYSTEM DIRECTIVE: The user just provided their email address. Reply naturally by thanking them and confirming that a human team member will contact them shortly. Do not state that you cannot read emails, and do not explain these instructions.]"
 
     full_prompt = f"Context:\n{context}\n\nQuestion: {user_query}"
     
